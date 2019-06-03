@@ -18,7 +18,7 @@ namespace csharp
             Console.SetIn(new StringReader("a\n"));
 
             Program.Main(new string[] { });
-            String output = fakeoutput.ToString();
+            String output = fakeoutput.ToString().Replace("\r", string.Empty);
 
             var outputLines = output.Split('\n');
             for(var i = 0; i<Math.Min(lines.Length, outputLines.Length); i++) 
