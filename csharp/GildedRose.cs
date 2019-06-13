@@ -5,45 +5,32 @@ namespace csharp
     public class GildedRose
     {
         IList<Item> Items;
-        public GildedRose(IList<Item> Items)
+        IList<GildedRoseItem> gildedRoseItems;
+        public GildedRose(IList<GildedRoseItem> Items)
         {
-            this.Items = Items;
+            gildedRoseItems = Items;
         }
 
         public void UpdateQuality()
         {
-            for (var i = 0; i < Items.Count; i++)
+
+            for (var i = 0; i < gildedRoseItems.Count; i++)
             {
-                switch (Items[i].Name)
-                {
-                    case "Sulfuras, Hand of Ragnaros":
-                        break;
-                    case "Aged Brie":
-                        UpdateValues(Items[i], -1);
-                        break;
-                    case "Backstage passes to a TAFKAL80ETC concert":
-                        UpdateValues(Items[i], -1, new List<Rule> { new Rule(5, 3), new Rule(10, 2) });
-                        SetValue(Items[i], new Rule(0, 0));
-                        break;
-                    case "Conjured Mana Cake":
-                        UpdateValues(Items[i], 2);
-                        break;
-                    default:
-                        UpdateValues(Items[i], 1);
-                        break;
-                }
+                gildedRoseItems[i].UpdateQuality();
+              
             }
         }
+    }
 
-        public void SetValue(Item item, Rule rule)
+    public abstract class GildedRoseItem
+    {
+        protected int quantity;
+        protected Item item {get; set;}
+        public GildedRoseItem(Item item)
         {
-            if (item.SellIn < rule.Limit)
-            {
-                item.Quality = rule.Value;
-            }
+            this.item = item;
         }
-
-        public void UpdateValues(Item item, int quantity)
+        public virtual void UpdateQuality()
         {
             item.SellIn--;
 
@@ -65,31 +52,95 @@ namespace csharp
                 item.Quality = 50;
             }
         }
-
-        public void UpdateValues(Item item, int quantity, List<Rule> rules)
-        {
-            rules.Sort(new LimitsComparer());
-            foreach (var rule in rules)
-            {
-                if (item.SellIn <= rule.Limit)
-                {
-                    UpdateValues(item, rule.Value * quantity);
-                    return;
-                }
-            }
-            UpdateValues(item, quantity);
-        }
     }
 
-    class LimitsComparer : IComparer<Rule>
+    public class OrdinaryItem: GildedRoseItem
     {
-        public int Compare(Rule x, Rule y)
+        public OrdinaryItem(Item item) : base(item)
         {
-            if (x.Limit == 0 || y.Limit == 0)
-            {
-                return 0;
-            } 
-            return x.Limit.CompareTo(y.Limit);
+            quantity = 1;
+        }
+        public override void UpdateQuality()
+        {
+            base.UpdateQuality();
         }
     }
+    public class SulfurasHandofRagnaros: GildedRoseItem
+    {
+        public SulfurasHandofRagnaros(Item item) : base(item) { }
+        public override void UpdateQuality()
+        {
+            return;
+        }
+    }
+    public class AgedBrie: GildedRoseItem
+    {
+        public AgedBrie(Item item) : base(item)
+        {
+            quantity = -1;
+        }
+        public override void UpdateQuality()
+        {
+            base.UpdateQuality();
+        }
+    }
+
+    public class BackstagepassestoaTAFKAL80ETCconcert: GildedRoseItem
+    {
+        public BackstagepassestoaTAFKAL80ETCconcert(Item item) : base(item)
+        {
+            quantity = -1;
+        }
+    
+        public override void UpdateQuality()
+        {
+            if (item.SellIn <= 0)
+            {
+                item.Quality = 0;
+                item.SellIn--;
+                return;
+            }
+
+            if (item.SellIn <= 10)
+            {
+                quantity = -2;
+            }
+            if (item.SellIn <= 5)
+            {
+                quantity = -3;
+            }
+            base.UpdateQuality();
+        }
+    }
+    public class ConjuredManaCake: GildedRoseItem
+    {
+        public ConjuredManaCake(Item item) : base(item)
+        {
+            quantity = 2;
+        }
+        public override void UpdateQuality()
+        {
+            base.UpdateQuality();
+        }
+    }
+
+    public class ItemFactory
+    {
+        public static GildedRoseItem GetItem(Item item)
+        {
+            switch (item.Name)
+            {
+                case "Sulfuras, Hand of Ragnaros":
+                    return new SulfurasHandofRagnaros(item);
+                case "Aged Brie":
+                    return new AgedBrie(item);
+                case "Backstage passes to a TAFKAL80ETC concert":
+                    return new BackstagepassestoaTAFKAL80ETCconcert(item);
+                case "Conjured Mana Cake":
+                    return new ConjuredManaCake(item);
+                default:
+                    return new OrdinaryItem(item);
+            }
+        }
+    } 
 }
